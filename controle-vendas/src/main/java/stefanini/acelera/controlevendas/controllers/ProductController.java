@@ -6,23 +6,35 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import stefanini.acelera.controlevendas.dto.RegisterAmountProductDto;
 import stefanini.acelera.controlevendas.repository.ProductRepository;
+import stefanini.acelera.controlevendas.service.ProductService;
+import stefanini.acelera.controlevendas.utils.ItemCsv;
+import stefanini.acelera.controlevendas.utils.Utils;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("product")
 public class ProductController {
 
     @Autowired
-    ProductRepository productRepository;
+    private ProductService productService;
 
     @PostMapping("/registerAmount/{code}")
     @Transactional
     public ResponseEntity<Void> registerAmountProduct(@PathVariable Integer code, @RequestBody RegisterAmountProductDto dto) {
-        if (code != null && dto.getAmount() != null && dto.getDate() != null) {
-            if (productRepository.findByCode(code).isPresent()) {
-                productRepository.updateAmountProduct(dto.getAmount(), dto.getDate(), code);
-                return ResponseEntity.status(201).build();
+        return productService.storeData(code, dto);
+
+    }
+
+    @PutMapping("/registerXlsx")
+    public ResponseEntity<Void> registerXlsx() {
+        List<ItemCsv> itemCsvs = Utils.leitorCsv();
+        for (int i = 1; i <= itemCsvs.size(); i++) {
+            Boolean isCode = productService.storeDataCsv(itemCsvs.get(i - 1));
+            if (!isCode){
+                return ResponseEntity.status(404).build();
             }
         }
-        return ResponseEntity.status(404).build();
+        return ResponseEntity.status(204).build();
     }
 }
